@@ -1,0 +1,27 @@
+# Keep the Docker build context small and reproducible.
+**/node_modules
+**/.expo
+**/.expo-shared
+mobile/dist
+mobile/web-build
+frontend/node_modules
+
+# VCS / editor / OS
+.git
+**/.git
+.vscode
+.idea
+.DS_Store
+
+# Logs and local run artifacts
+*.log
+logs/
+services/__pycache__/
+**/__pycache__/
+*.pid
+
+# Docs and non-deploy material
+non important ideas/
+the why/
+extras/
+*.code-workspace

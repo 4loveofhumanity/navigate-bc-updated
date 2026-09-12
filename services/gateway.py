@@ -10,10 +10,15 @@ import subprocess
 import sys
 import urllib.request
 
-PORT = 8641
+# PORT follows the platform convention ($PORT on DigitalOcean App Platform,
+# Heroku, etc.) and falls back to the local default.
+PORT = int(os.environ.get("PORT") or os.environ.get("BC_GATEWAY_PORT") or 8641)
 HOST = os.environ.get("BC_GATEWAY_HOST", "127.0.0.1")
 BASE = os.path.dirname(os.path.abspath(__file__))
 FRONTEND = os.path.normpath(os.path.join(BASE, "..", "frontend"))
+# In production, point BC_WEB_DIR at the Expo web export (single-page build) to
+# serve the native app's web bundle; otherwise serve the legacy browser prototype.
+WEB_DIR = os.path.normpath(os.environ.get("BC_WEB_DIR", "").strip() or FRONTEND)
 ALLOWED_ORIGINS = {
     origin.strip()
     for origin in os.environ.get(
@@ -54,12 +59,28 @@ def stop_services():
 
 class GatewayHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=FRONTEND, **kwargs)
+        super().__init__(*args, directory=WEB_DIR, **kwargs)
 
     def do_GET(self):
         if self.path.startswith("/api/"):
             self._proxy()
             return
+        self._serve_web()
+
+    def _serve_web(self):
+        """Serve a static file; map extensionless routes to <route>.html and
+        fall back to index.html so Expo Router client routes resolve on reload."""
+        route = self.path.split("?", 1)[0].split("#", 1)[0]
+        fs_path = self.translate_path(self.path)
+        if os.path.isdir(fs_path) or os.path.isfile(fs_path):
+            super().do_GET()
+            return
+        html_candidate = fs_path.rstrip("/\\") + ".html"
+        if os.path.isfile(html_candidate):
+            self.path = route.rstrip("/") + ".html"
+            super().do_GET()
+            return
+        self.path = "/index.html"
         super().do_GET()
 
     def do_OPTIONS(self):

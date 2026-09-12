@@ -1,0 +1,52 @@
+# DigitalOcean App Platform spec — Pugliese / Brooklyn College Navigate.
+#
+# One Dockerfile-based service builds the Expo web bundle and runs the Python
+# gateway, which serves that bundle and proxies /api to the demo microservices
+# (all in the same container, same origin — no CORS needed).
+#
+# Deploy:
+#   1) Push this repo to GitHub and set `github.repo` / `branch` below
+#      (or create the app in the DO console and pick this repo — it auto-detects
+#      the Dockerfile and this spec).
+#   2) doctl apps create --spec .do/app.yaml
+#      (update later with: doctl apps update <app-id> --spec .do/app.yaml)
+name: pugliese-navigate
+region: nyc
+
+services:
+  - name: web
+    # --- Source: replace with your repository ---
+    github:
+      repo: your-org/pugliese-navigate
+      branch: main
+      deploy_on_push: true
+
+    # Build from the multi-stage Dockerfile at the repo root.
+    dockerfile_path: Dockerfile
+    source_dir: /
+
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+
+    health_check:
+      http_path: /
+      initial_delay_seconds: 20
+      period_seconds: 15
+
+    envs:
+      # Build-time: baked into the web bundle. Same-origin API path.
+      - key: EXPO_PUBLIC_API_URL
+        scope: BUILD_TIME
+        value: /api
+      # Run-time: bind all interfaces and serve the exported web bundle.
+      - key: BC_GATEWAY_HOST
+        scope: RUN_TIME
+        value: "0.0.0.0"
+      - key: BC_WEB_DIR
+        scope: RUN_TIME
+        value: /app/web
+      # Optional: lock CORS to your domain if you ever split the API out.
+      # - key: BC_ALLOWED_ORIGINS
+      #   scope: RUN_TIME
+      #   value: https://your-app.ondigitalocean.app

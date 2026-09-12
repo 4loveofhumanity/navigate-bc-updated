@@ -3,10 +3,9 @@
   "configurations": [
     {
       "name": "expo-web",
-      "runtimeExecutable": "C:\\Users\\Nahid\\AppData\\Local\\OpenAI\\Codex\\bin\\5b9024f90663758b\\node.exe",
-      "runtimeArgs": ["mobile/node_modules/expo/bin/cli", "start", "--web", "--port", "8651"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/expo-web-launcher.cjs"],
       "port": 8651
     }
   ]
 }
-

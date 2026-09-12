@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Expo / build output
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+.expo/
+
+# Python
+**/__pycache__/
+*.pyc
+
+# Logs and local run artifacts
+*.log
+logs/
+*.pid
+
+# Local launcher / scratch material (not part of the deployable app)
+non important ideas/
+the why/
+extras/
+.agents/
+.codex/
+Open Nav Pugliese.cmd
+
+# OS / editor
+.DS_Store
+.idea/
