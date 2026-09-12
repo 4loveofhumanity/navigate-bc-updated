@@ -66,7 +66,8 @@ const features: Feature[] = [
   { title: 'My Classes', subtitle: 'Assignments, class chat, and files', icon: 'google-classroom', href: '/my-classes', badge: '3 active' },
   { title: 'Academic Calendar', subtitle: 'Registrar dates and deadlines', icon: 'calendar-star', href: '/academic-calendar' },
   { title: 'Events', subtitle: 'What is happening on campus', icon: 'calendar-month-outline', href: '/events' },
-  { title: 'Dining & Orders', subtitle: 'BK Campus Eats menus and online ordering', icon: 'silverware-fork-knife', href: '/cafeteria', badge: 'Order ahead' },
+  { title: 'Dining & Orders', subtitle: 'Order online from the cafeteria', icon: 'silverware-fork-knife', href: '/cafeteria' },
+  { title: 'Messages', subtitle: 'Text your classmates', icon: 'message-text-outline', href: '/messages' },
   { title: 'My Career', subtitle: 'Career-readiness guide', icon: 'briefcase-variant-outline', href: '/career', tone: 'blue' },
   { title: 'Courses', subtitle: 'Catalog and sections', icon: 'book-open-page-variant-outline', href: '/courses' },
   { title: 'Campus Map', subtitle: 'Buildings and directions', icon: 'map-marker-radius-outline', href: '/map', tone: 'blue' },
@@ -74,7 +75,7 @@ const features: Feature[] = [
   { title: 'Student Info', subtitle: 'Student profile and holds', icon: 'account-school-outline', href: '/info' },
   { title: 'Library', subtitle: 'Research, books, and study support', icon: 'bookshelf', href: '/library' },
   { title: 'Help', subtitle: 'Answers and contacts', icon: 'help-circle-outline', href: '/help' },
-  { title: 'PUG', subtitle: 'Campus community', icon: 'account-group-outline', href: '/pugliese-circle', tone: 'blue' },
+  { title: 'Campus', subtitle: 'Campus community', icon: 'account-group-outline', href: '/pugliese-circle', tone: 'blue' },
   { title: 'Fix-it', subtitle: 'Report a campus issue', icon: 'wrench-outline', href: '/fix-it' },
 ];
 
@@ -112,7 +113,7 @@ export default function HomeScreen() {
           <View style={styles.topbar}>
             <View style={styles.appIdentity}>
               <Image source={require('../../assets/brand/seal.png')} style={styles.topbarSeal} />
-              <Text style={styles.appName}>Pugliese Navigate</Text>
+              <Text style={styles.appName}>N° Navigate</Text>
             </View>
             <Pressable
               accessibilityLabel={hasAlerts ? 'Open alerts, unread notices available' : 'Open alerts'}
@@ -130,9 +131,8 @@ export default function HomeScreen() {
           <DashboardSnapshot />
 
           <View style={styles.heroCopy}>
-            <Image source={require('../../assets/brand/seal.png')} style={styles.heroSeal} />
-            <Text style={styles.collegeName}>PUGLIESE COLLEGE</Text>
-            <Text style={styles.campusAddress}>2900 Bedford Avenue, Pugliese, NY 11210</Text>
+            <Text style={styles.collegeName}>BROOKLYN COLLEGE</Text>
+            <Text style={styles.campusAddress}>2900 Bedford Avenue, Brooklyn, NY 11210</Text>
           </View>
         </SafeAreaView>
       </ImageBackground>
@@ -150,7 +150,7 @@ export default function HomeScreen() {
             icon="account-group-outline"
             onPress={() => router.push('/pugliese-circle')}
             subtitle="Campus community"
-            title="PUG"
+            title="Campus"
           />
           {/* Student ID intentionally remains the fixed top-right Quick Access action. */}
           <QuickAccessCard

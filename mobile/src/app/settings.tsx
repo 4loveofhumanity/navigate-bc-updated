@@ -136,7 +136,7 @@ export default function SettingsScreen() {
           icon="refresh"
           label="Restore default settings"
           onPress={() =>
-              Alert.alert('Restore defaults?', 'This resets all Pugliese Navigate preferences on this device.', [
+              Alert.alert('Restore defaults?', 'This resets all N° Navigate preferences on this device.', [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Restore', style: 'destructive', onPress: resetPreferences },
             ])

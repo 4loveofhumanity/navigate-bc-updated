@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, shadows, spacing } from '@/constants/theme';
 import { useSettings } from '@/context/settings-context';
 
-const TEST_USERNAME = 'PUGTEST';
-const TEST_PASSWORD = 'demo';
+const TEST_USERNAME = 'student';
+const TEST_PASSWORD = 'password';
 
 export default function OnboardingScreen() {
   const router = useRouter();

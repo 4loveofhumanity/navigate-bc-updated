@@ -1,168 +1,274 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Switch, StyleSheet, Text, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { AppScaffold } from '@/components/app-scaffold';
+import { PageIntro, SectionTitle, Surface } from '@/components/ui';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { useSocial } from '@/context/social-context';
+import { getPairingTransport, type PairingHandle, type PairingMethod, type PairingUpdate } from '@/lib/pairing';
 
-type CircleMember = {
-  initials: string;
-  name: string;
-  location: string;
-  duration: string;
-  accent: string;
+const METHOD_COPY: Record<PairingMethod, { label: string; searching: string }> = {
+  nfc: { label: 'Tap to pair', searching: 'Hold your phones together…' },
+  nearby: { label: 'Find nearby', searching: 'Looking for nearby classmates…' },
 };
 
-const circleMembers: CircleMember[] = [
-  { initials: 'MR', name: 'Maya R.', location: 'Chemistry Lab · H 1141', duration: '14h 20m', accent: '#5E82B7' },
-  { initials: 'JT', name: 'Jordan T.', location: 'Library · 3rd Floor', duration: '9h 5m', accent: '#5E82B7' },
-  { initials: 'PS', name: 'Priya S.', location: 'Student Center', duration: '6h 40m', accent: '#5E82B7' },
-  { initials: 'AK', name: 'Ari K.', location: 'West Quad Building', duration: '3h 15m', accent: '#5E82B7' },
-  { initials: 'DM', name: 'Devon M.', location: 'Campus Library', duration: '1h 55m', accent: '#5E82B7' },
-];
+// Proximity time accumulated with a friend.
+function formatTogether(minutes: number): string {
+  if (minutes <= 0) return 'no time yet';
+  return `${formatDuration(minutes)} together`;
+}
 
-export default function PuglieseCircleScreen() {
-  const [locationEnabled, setLocationEnabled] = useState(true);
-  const [presenceEnabled, setPresenceEnabled] = useState(true);
+// Compact duration for the community row's right column.
+function formatDuration(minutes: number): string {
+  if (minutes <= 0) return 'New';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
+export default function CampusCommunityScreen() {
+  const router = useRouter();
+  const { me, friends, inviteLink, addPeer } = useSocial();
+  const totalMinutes = friends.reduce((sum, friend) => sum + friend.minutesTogether, 0);
+  const [activeMethod, setActiveMethod] = useState<PairingMethod | null>(null);
+  const [update, setUpdate] = useState<PairingUpdate | null>(null);
+  const [addedName, setAddedName] = useState<string | null>(null);
+  const handleRef = useRef<PairingHandle | null>(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+      handleRef.current?.cancel();
+    };
+  }, []);
+
+  function startPairing(method: PairingMethod) {
+    void Haptics.selectionAsync();
+    setAddedName(null);
+    setActiveMethod(method);
+    setUpdate({ phase: 'searching' });
+    const transport = getPairingTransport(method);
+    handleRef.current = transport.start({ name: me.name, code: me.code, accent: colors.maroon }, (next) => {
+      if (!mounted.current) return;
+      setUpdate(next);
+      if (next.phase === 'connected' && next.peer) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const result = addPeer(next.peer, method);
+        setAddedName(result.isNew ? result.friend.name : `${result.friend.name} (already connected)`);
+        setActiveMethod(null);
+      } else if (next.phase === 'cancelled' || next.phase === 'error' || next.phase === 'unavailable') {
+        setActiveMethod(null);
+      }
+    });
+  }
+
+  function cancelPairing() {
+    handleRef.current?.cancel();
+    setActiveMethod(null);
+    setUpdate(null);
+  }
+
+  async function shareInvite() {
+    void Haptics.selectionAsync();
+    const message = `Add me on the Brooklyn College app — my code is ${me.code}\n${inviteLink}`;
+    try {
+      await Share.share({ message, title: 'Add me on campus' });
+    } catch {
+      Alert.alert('Your invite', message);
+    }
+  }
+
+  const searching = activeMethod !== null;
 
   return (
-    <AppScaffold contentContainerStyle={styles.content}>
-      <View style={styles.controlCard}>
-        <CircleControl
-          icon="location"
-          label="Location Services"
-          detail={locationEnabled ? 'On · West Quad Building' : 'Off · Turn on to share your location'}
-          value={locationEnabled}
-          onValueChange={setLocationEnabled}
-        />
-        <CircleControl
-          icon="radio"
-          label="Share My Presence"
-          detail={presenceEnabled ? 'Discover people you spend time with' : 'Off · Your presence is hidden'}
-          value={presenceEnabled}
-          onValueChange={setPresenceEnabled}
-        />
-      </View>
+    <AppScaffold>
+      <PageIntro
+        eyebrow="Campus community"
+        title="Connect with classmates around you."
+        body="Tap phones together or discover who's nearby to add each other — that pairing is how you build your campus community. Then keep in touch in Messages."
+      />
 
-      {presenceEnabled ? (
-        <>
-          <Text style={styles.sectionLabel}>YOUR PUG</Text>
-          <View style={styles.memberList}>
-            {circleMembers.map((member) => <CircleMemberRow member={member} key={member.initials} />)}
+      {searching ? (
+        <View style={styles.pairingCard}>
+          <View style={styles.pulse}>
+            <MaterialCommunityIcons color={colors.maroon} name={activeMethod === 'nfc' ? 'nfc-tap' : 'access-point'} size={30} />
           </View>
-        </>
+          <Text style={styles.pairingTitle}>{update?.peer ? `Found ${update.peer.name}` : METHOD_COPY[activeMethod].label}</Text>
+          <Text style={styles.pairingDetail}>{update?.detail ?? (update?.phase === 'found' ? 'Connecting…' : METHOD_COPY[activeMethod].searching)}</Text>
+          <Pressable accessibilityRole="button" onPress={cancelPairing} style={styles.cancelButton}>
+            <Text style={styles.cancelLabel}>Cancel</Text>
+          </Pressable>
+        </View>
       ) : (
-        <View style={styles.disabledState}>
-          <View style={styles.disabledIcon}><Ionicons color={colors.maroon} name="eye-off-outline" size={28} /></View>
-          <Text style={styles.disabledTitle}>Presence sharing is off</Text>
-          <Text style={styles.disabledBody}>Turn on Share My Presence to see your PUG and the places you spend time together.</Text>
+        <View style={styles.methods}>
+          <PairMethod
+            icon="nfc-tap"
+            title="Tap to pair"
+            detail="Hold two phones together"
+            onPress={() => startPairing('nfc')}
+          />
+          <PairMethod
+            icon="access-point"
+            title="Find nearby"
+            detail="Pairs within ~42 cm (420 mm)"
+            onPress={() => startPairing('nearby')}
+          />
         </View>
       )}
+
+      {addedName && !searching ? (
+        <View style={styles.addedBanner}>
+          <Ionicons color={colors.green} name="checkmark-circle" size={20} />
+          <Text style={styles.addedText}>Connected with {addedName}.</Text>
+        </View>
+      ) : null}
+
+      <Pressable accessibilityRole="button" onPress={shareInvite} style={styles.shareRow}>
+        <Ionicons color={colors.maroon} name="share-outline" size={17} />
+        <Text style={styles.shareText}>Or share your invite (AirDrop, Messages…) · {me.code}</Text>
+      </Pressable>
+
+      <SectionTitle action={<Text style={styles.totalTime}>{formatTogether(totalMinutes)} total</Text>}>
+        Your community ({friends.length})
+      </SectionTitle>
+      <Surface>
+        {friends.map((friend, index) => (
+          <Pressable
+            accessibilityLabel={`Message ${friend.name}. ${formatTogether(friend.minutesTogether)}`}
+            accessibilityRole="button"
+            key={friend.id}
+            onPress={() => router.push({ pathname: '/messages', params: { friend: friend.id } })}
+            style={({ pressed }) => [styles.memberRow, index === friends.length - 1 && styles.memberRowLast, pressed && styles.memberRowPressed]}
+          >
+            <View style={[styles.avatar, { backgroundColor: friend.accent }]}>
+              <Text style={styles.avatarText}>{friend.name.charAt(0)}</Text>
+              <View style={styles.onlineDot} />
+            </View>
+            <View style={styles.memberCopy}>
+              <Text style={styles.memberName}>{friend.name}</Text>
+              <View style={styles.locationRow}>
+                <Ionicons color={colors.inkMuted} name="location-outline" size={12} />
+                <Text numberOfLines={1} style={styles.locationText}>{friend.location}</Text>
+              </View>
+            </View>
+            <View style={styles.durationCol}>
+              <Text style={styles.durationValue}>{formatDuration(friend.minutesTogether)}</Text>
+              <Text style={styles.durationLabel}>together</Text>
+            </View>
+            <Ionicons color={colors.maroon} name="chatbubble-ellipses-outline" size={19} style={styles.rowChat} />
+          </Pressable>
+        ))}
+      </Surface>
+
+      <View style={styles.note}>
+        <Ionicons color={colors.amber} name="information-circle-outline" size={18} />
+        <Text style={styles.noteText}>
+          Pairing uses NFC tap and Bluetooth / UWB proximity — two phones pair within ~420 mm (UWB measures this precisely; BLE
+          estimates it). These need a native build, so this demo simulates the handshake and keeps chats on your device.
+        </Text>
+      </View>
     </AppScaffold>
   );
 }
 
-function CircleControl({
-  icon,
-  label,
-  detail,
-  value,
-  onValueChange,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  detail: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-}) {
+function PairMethod({ icon, title, detail, onPress }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; title: string; detail: string; onPress: () => void }) {
   return (
-    <View style={styles.controlRow}>
-      <View style={styles.controlIcon}><Ionicons color={colors.white} name={icon} size={19} /></View>
-      <View style={styles.controlCopy}>
-        <Text style={styles.controlLabel}>{label}</Text>
-        <Text style={styles.controlDetail}>{detail}</Text>
+    <Pressable
+      accessibilityLabel={`${title}. ${detail}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.method, pressed && styles.methodPressed]}
+    >
+      <View style={styles.methodIcon}>
+        <MaterialCommunityIcons color={colors.white} name={icon} size={26} />
       </View>
-      <Switch
-        accessibilityLabel={label}
-        onValueChange={onValueChange}
-        thumbColor={colors.white}
-        trackColor={{ false: colors.borderStrong, true: '#2DC463' }}
-        value={value}
-      />
-    </View>
-  );
-}
-
-function CircleMemberRow({ member }: { member: CircleMember }) {
-  return (
-    <View style={styles.memberRow}>
-      <View style={[styles.avatar, { backgroundColor: member.accent }]}> 
-        <Text style={styles.avatarText}>{member.initials}</Text>
-        <View style={styles.onlineDot} />
-      </View>
-      <View style={styles.memberCopy}>
-        <View style={styles.nameLine}>
-          <Text style={styles.memberName}>{member.name}</Text>
-          <Text style={styles.nearby}> · nearby</Text>
-        </View>
-        <Text style={styles.memberLocation}>Most at {member.location}</Text>
-      </View>
-      <View style={styles.durationCopy}>
-        <Text style={styles.duration}>{member.duration}</Text>
-        <Text style={styles.together}>together now</Text>
-      </View>
-    </View>
+      <Text style={styles.methodTitle}>{title}</Text>
+      <Text style={styles.methodDetail}>{detail}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { backgroundColor: '#F4F5FA', paddingBottom: spacing.xxl },
-  controlCard: { backgroundColor: '#F4F5FA', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingTop: spacing.sm },
-  controlRow: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radii.md, flexDirection: 'row', minHeight: 60, paddingHorizontal: spacing.md, ...{ boxShadow: '0 2px 7px rgba(31, 44, 75, 0.08)' } },
-  controlIcon: { alignItems: 'center', backgroundColor: '#A42C43', borderRadius: 10, height: 34, justifyContent: 'center', width: 34 },
-  controlCopy: { flex: 1, marginLeft: spacing.md },
-  controlLabel: { color: '#101A2B', fontFamily: fonts.uiBold, fontSize: 15 },
-  controlDetail: { color: '#68728A', fontFamily: fonts.ui, fontSize: 12, marginTop: 1 },
-  mapSection: { alignItems: 'center', paddingTop: spacing.lg },
-  presenceMap: { height: 286, position: 'relative', width: 286 },
-  mapGlow: { backgroundColor: 'rgba(109, 183, 255, .25)', borderRadius: 90, height: 120, position: 'absolute', right: 23, top: 18, transform: [{ rotate: '45deg' }], width: 58 },
-  mapRing: { borderColor: '#CCD7E5', borderWidth: 1, borderRadius: 999, position: 'absolute' },
-  outerRing: { height: 272, left: 7, top: 7, width: 272 },
-  middleRing: { height: 192, left: 47, top: 47, width: 192 },
-  innerRing: { height: 112, left: 87, top: 87, width: 112 },
-  mapLineOne: { backgroundColor: '#CBD6E4', height: 1, left: 38, position: 'absolute', top: 139, transform: [{ rotate: '28deg' }], width: 215 },
-  mapLineTwo: { backgroundColor: '#CBD6E4', height: 1, left: 37, position: 'absolute', top: 139, transform: [{ rotate: '-33deg' }], width: 215 },
-  mapLineThree: { backgroundColor: '#CBD6E4', height: 1, left: 79, position: 'absolute', top: 139, transform: [{ rotate: '72deg' }], width: 130 },
-  mapLineFour: { backgroundColor: '#CBD6E4', height: 1, left: 79, position: 'absolute', top: 139, transform: [{ rotate: '-72deg' }], width: 130 },
-  youNode: { alignItems: 'center', backgroundColor: colors.maroon, borderRadius: 18, height: 36, justifyContent: 'center', left: 125, position: 'absolute', top: 125, width: 36 },
-  youText: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 12 },
-  presenceNode: { alignItems: 'center', backgroundColor: '#5D80B5', borderRadius: 15, height: 30, justifyContent: 'center', position: 'absolute', width: 30 },
-  presenceNodeActive: { backgroundColor: '#1685F8' },
-  nodeText: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 11 },
-  nodeSo: { left: 30, top: 74 },
-  nodeMr: { left: 118, top: 37 },
-  nodeJt: { right: 51, top: 46 },
-  nodePs: { right: 43, top: 131 },
-  nodeAk: { left: 38, top: 164 },
-  nodeDm: { left: 123, top: 211 },
-  mapLegend: { color: '#68728A', fontFamily: fonts.ui, fontSize: 12, marginTop: spacing.xs },
-  mapLegendAccent: { color: colors.red, fontFamily: fonts.uiBold },
-  sectionLabel: { color: '#68728A', fontFamily: fonts.uiMedium, fontSize: 13, marginBottom: spacing.sm, marginHorizontal: spacing.md, marginTop: spacing.lg },
-  memberList: { gap: spacing.sm, paddingHorizontal: spacing.sm },
-  memberRow: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radii.md, flexDirection: 'row', minHeight: 68, paddingHorizontal: spacing.md, ...{ boxShadow: '0 2px 7px rgba(31, 44, 75, 0.08)' } },
-  avatar: { alignItems: 'center', borderRadius: 22, height: 44, justifyContent: 'center', position: 'relative', width: 44 },
-  avatarText: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 14 },
-  onlineDot: { backgroundColor: '#2DC463', borderColor: colors.white, borderRadius: 6, borderWidth: 2, bottom: -1, height: 12, position: 'absolute', right: -1, width: 12 },
-  memberCopy: { flex: 1, marginLeft: spacing.md },
-  nameLine: { alignItems: 'baseline', flexDirection: 'row' },
-  memberName: { color: '#182133', fontFamily: fonts.uiBold, fontSize: 15 },
-  nearby: { color: '#68728A', fontFamily: fonts.ui, fontSize: 11 },
-  memberLocation: { color: '#68728A', fontFamily: fonts.ui, fontSize: 12, marginTop: 2 },
-  durationCopy: { alignItems: 'flex-end' },
-  duration: { color: '#182133', fontFamily: fonts.uiBold, fontSize: 15 },
-  together: { color: '#68728A', fontFamily: fonts.ui, fontSize: 10, marginTop: 1 },
-  disabledState: { alignItems: 'center', paddingHorizontal: spacing.xxl, paddingTop: spacing.xxxl },
-  disabledIcon: { alignItems: 'center', backgroundColor: colors.maroonSoft, borderRadius: 30, height: 60, justifyContent: 'center', width: 60 },
-  disabledTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 18, marginTop: spacing.lg },
-  disabledBody: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: spacing.sm, textAlign: 'center' },
+  methods: { flexDirection: 'row', gap: spacing.md, marginHorizontal: spacing.lg },
+  method: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  methodPressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
+  methodIcon: { alignItems: 'center', backgroundColor: colors.maroon, borderRadius: 27, height: 54, justifyContent: 'center', marginBottom: spacing.sm, width: 54 },
+  methodTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 15 },
+  methodDetail: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, marginTop: 3, textAlign: 'center' },
+  pairingCard: {
+    alignItems: 'center',
+    backgroundColor: colors.maroonSoft,
+    borderRadius: radii.lg,
+    marginHorizontal: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
+  pulse: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 34, height: 68, justifyContent: 'center', marginBottom: spacing.md, width: 68 },
+  pairingTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 18 },
+  pairingDetail: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 13, marginTop: 4, textAlign: 'center' },
+  cancelButton: { marginTop: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  cancelLabel: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 15 },
+  addedBanner: {
+    alignItems: 'center',
+    backgroundColor: colors.greenSoft,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  addedText: { color: colors.green, fontFamily: fonts.uiMedium, fontSize: 13 },
+  shareRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: spacing.lg },
+  shareText: { color: colors.maroon, fontFamily: fonts.uiMedium, fontSize: 13 },
+  memberRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  memberRowLast: { borderBottomWidth: 0 },
+  memberRowPressed: { backgroundColor: colors.cream },
+  avatar: { alignItems: 'center', borderRadius: 21, height: 42, justifyContent: 'center', position: 'relative', width: 42 },
+  avatarText: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 17 },
+  onlineDot: { backgroundColor: colors.green, borderColor: colors.surface, borderRadius: 6, borderWidth: 2, bottom: -1, height: 12, position: 'absolute', right: -1, width: 12 },
+  memberCopy: { flex: 1 },
+  memberName: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 15 },
+  locationRow: { alignItems: 'center', flexDirection: 'row', gap: 3, marginTop: 3 },
+  locationText: { color: colors.inkMuted, flex: 1, fontFamily: fonts.ui, fontSize: 12 },
+  durationCol: { alignItems: 'flex-end' },
+  durationValue: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 13 },
+  durationLabel: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 10, marginTop: 1 },
+  rowChat: { marginLeft: spacing.sm },
+  totalTime: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 12 },
+  note: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.amberSoft,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    padding: spacing.md,
+  },
+  noteText: { color: colors.amber, flex: 1, fontFamily: fonts.uiMedium, fontSize: 12, lineHeight: 17 },
 });

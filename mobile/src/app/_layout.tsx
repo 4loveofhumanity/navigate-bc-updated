@@ -18,6 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors, fonts } from '@/constants/theme';
 import { SettingsProvider } from '@/context/settings-context';
+import { SocialProvider } from '@/context/social-context';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -50,6 +51,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <SettingsProvider>
+            <SocialProvider>
             <StatusBar style="light" />
             <Stack
               screenOptions={{
@@ -69,6 +71,7 @@ export default function RootLayout() {
               <Stack.Screen name="my-classes" options={{ title: 'My Classes' }} />
               <Stack.Screen name="events" options={{ title: 'Events' }} />
               <Stack.Screen name="cafeteria" options={{ title: 'Dining & Orders' }} />
+              <Stack.Screen name="messages" options={{ title: 'Messages' }} />
               <Stack.Screen name="academic-calendar" options={{ title: 'Academic Calendar' }} />
               <Stack.Screen name="it-status" options={{ title: 'IT Status' }} />
               <Stack.Screen name="alerts" options={{ title: 'My Alerts' }} />
@@ -83,6 +86,7 @@ export default function RootLayout() {
               <Stack.Screen name="fix-it" options={{ title: 'Fix-it' }} />
               <Stack.Screen name="browser" options={{ title: 'Browser' }} />
             </Stack>
+            </SocialProvider>
           </SettingsProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

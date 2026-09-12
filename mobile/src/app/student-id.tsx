@@ -7,14 +7,19 @@ import { AppScaffold } from '@/components/app-scaffold';
 import { PageIntro, Pill } from '@/components/ui';
 import { colors, fonts, radii, shadows, spacing } from '@/constants/theme';
 import { useSettings } from '@/context/settings-context';
-import { DEMO_STUDENT_CARD } from '@/data/demo';
-import { getStudentCard } from '@/lib/api';
+import { DEMO_LIBRARY, DEMO_STUDENT_CARD } from '@/data/demo';
+import { getLibraryResources, getStudentCard } from '@/lib/api';
 
 export default function StudentIdScreen() {
   const card = useQuery({
     queryKey: ['student-card'],
     queryFn: getStudentCard,
     placeholderData: DEMO_STUDENT_CARD,
+  });
+  const library = useQuery({
+    queryKey: ['library-resources'],
+    queryFn: getLibraryResources,
+    placeholderData: DEMO_LIBRARY,
   });
   const { preferences } = useSettings();
   const [pulse] = useState(() => new Animated.Value(0.45));
@@ -31,6 +36,7 @@ export default function StudentIdScreen() {
   }, [pulse]);
 
   const data = card.data ?? DEMO_STUDENT_CARD;
+  const libraryData = library.data ?? DEMO_LIBRARY;
 
   return (
     <AppScaffold>
@@ -74,6 +80,18 @@ export default function StudentIdScreen() {
           <Ionicons color={colors.white} name="lock-closed" size={15} />
           <Text style={styles.invalidText}>NOT VALID FOR ENTRY OR IDENTIFICATION</Text>
         </View>
+
+        <View style={styles.librarySection}>
+          <View style={styles.libraryHeader}>
+            <View style={styles.libraryHeaderCopy}>
+              <Text style={styles.libraryLabel}>LIBRARY CARD</Text>
+              <Text style={styles.libraryName}>{libraryData.name}</Text>
+            </View>
+            <Ionicons color={colors.maroon} name="library-outline" size={22} />
+          </View>
+          <SimpleBarcode value={libraryData.libraryId} />
+          <Text selectable style={styles.libraryId}>{libraryData.libraryId}</Text>
+        </View>
       </View>
 
       <View style={styles.securityNote}>
@@ -92,8 +110,29 @@ export default function StudentIdScreen() {
   );
 }
 
+function SimpleBarcode({ value }: { value: string }) {
+  const bars = `101${value.split('').map((digit) => (Number(digit) || 0).toString(2).padStart(4, '0')).join('01')}101`;
+
+  return (
+    <View accessibilityLabel={`Library card barcode ${value}`} style={styles.barcode}>
+      {bars.split('').map((bar, index) => (
+        <View key={`${index}-${bar}`} style={[styles.barcodeBar, bar === '0' && styles.barcodeSpace]} />
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderColor: colors.maroon, borderRadius: radii.lg, borderWidth: 2, marginHorizontal: spacing.lg, overflow: 'hidden', padding: spacing.lg, ...shadows.floating },
+  librarySection: { borderTopColor: colors.border, borderTopWidth: 1, marginTop: spacing.lg, paddingTop: spacing.lg },
+  libraryHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
+  libraryHeaderCopy: { flex: 1 },
+  libraryLabel: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 9, letterSpacing: 1.2 },
+  libraryName: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 14, marginTop: 2 },
+  barcode: { alignItems: 'stretch', flexDirection: 'row', height: 56, justifyContent: 'center', overflow: 'hidden', width: '100%' },
+  barcodeBar: { backgroundColor: colors.ink, flex: 1, maxWidth: 4 },
+  barcodeSpace: { backgroundColor: 'transparent' },
+  libraryId: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 15, letterSpacing: 2, marginTop: spacing.sm, textAlign: 'center' },
   cardHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   seal: { height: 50, width: 50 },
   brandCopy: { flex: 1 },
