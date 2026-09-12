@@ -1,4 +1,4 @@
-# DigitalOcean App Platform spec — Pugliese / Brooklyn College Navigate.
+﻿# DigitalOcean App Platform spec — Pugliese / Brooklyn College Navigate.
 #
 # One Dockerfile-based service builds the Expo web bundle and runs the Python
 # gateway, which serves that bundle and proxies /api to the demo microservices
@@ -17,7 +17,7 @@ services:
   - name: web
     # --- Source: replace with your repository ---
     github:
-      repo: your-org/pugliese-navigate
+      repo: 4loveofhumanity/navigate-bc-updated
       branch: main
       deploy_on_push: true
 

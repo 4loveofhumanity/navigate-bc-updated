@@ -28,3 +28,12 @@ Open Nav Pugliese.cmd
 # OS / editor
 .DS_Store
 .idea/
+
+# Editor / QA scratch
+.claude/
+**/.claude/
+.vscode/
+**/.vscode/
+mobile/.qa/
+*.code-workspace
+
