@@ -18,7 +18,7 @@ type RailAction = {
 
 const actions: RailAction[] = [
   { label: 'Emergency', icon: 'call', emergency: true },
-  { label: 'PUG', icon: 'chatbubbles', route: '/pugliese-circle' },
+  { label: 'Friends', icon: 'chatbubbles', route: '/pugliese-circle' },
   { label: 'Home', icon: 'home', route: '/', home: true },
   { label: 'Help', icon: 'help-circle', route: '/help' },
   { label: 'Settings', icon: 'settings', route: '/settings' },

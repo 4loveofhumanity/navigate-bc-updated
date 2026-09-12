@@ -139,7 +139,7 @@ function createBleTransport(): PairingTransport | null {
           if (peer && withinRange) {
             done = true;
             manager.stopDeviceScan();
-            onUpdate({ phase: 'found', peer, detail: distanceMm != null ? `~${Math.round(distanceMm)} mm away` : undefined });
+            onUpdate({ phase: 'found', peer });
             onUpdate({ phase: 'connected', peer });
           }
         });

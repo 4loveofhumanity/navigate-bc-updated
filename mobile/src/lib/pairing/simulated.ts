@@ -1,4 +1,4 @@
-import { PROXIMITY_TRIGGER_MM, type PairingMethod, type PairingPeer, type PairingTransport } from './types';
+import type { PairingMethod, PairingPeer, PairingTransport } from './types';
 
 // Stand-in classmates a nearby/NFC pair can discover in the demo.
 const POOL: PairingPeer[] = [
@@ -24,17 +24,16 @@ export function createSimulatedTransport(method: PairingMethod): PairingTranspor
     start(_self, onUpdate) {
       let cancelled = false;
       const timers: ReturnType<typeof setTimeout>[] = [];
-      // NFC "tap" resolves fast; BLE proximity takes a moment to discover.
+      // NFC "tap" resolves fast; nearby discovery takes a moment.
       const discoverMs = method === 'nfc' ? 800 : 1500;
-      const foundDetail = method === 'nearby' ? `~${PROXIMITY_TRIGGER_MM} mm away` : undefined;
 
-      onUpdate({ phase: 'searching', detail: method === 'nearby' ? `Bring phones within ${PROXIMITY_TRIGGER_MM} mm` : undefined });
+      onUpdate({ phase: 'searching' });
       timers.push(
         setTimeout(() => {
           if (cancelled) return;
           const peer = POOL[cursor % POOL.length];
           cursor += 1;
-          onUpdate({ phase: 'found', peer, detail: foundDetail });
+          onUpdate({ phase: 'found', peer });
           timers.push(
             setTimeout(() => {
               if (!cancelled) onUpdate({ phase: 'connected', peer });

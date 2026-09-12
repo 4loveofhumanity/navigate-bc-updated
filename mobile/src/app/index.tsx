@@ -138,7 +138,7 @@ export default function HomeScreen() {
       </ImageBackground>
 
       <View style={styles.indexIntro}>
-        <Text style={styles.indexEyebrow}>Pugliese Navigator</Text>
+        <Text style={styles.indexEyebrow}>Brooklyn College</Text>
         <Text style={styles.indexTitle}>NIL SINE MAGNO LABORE</Text>
         <Text style={styles.indexTranslation}>Nothing without great effort</Text>
       </View>
@@ -212,7 +212,7 @@ function DashboardSnapshot() {
   return (
     <View style={styles.snapshotRow}>
       <View style={styles.snapshotCard}>
-        <Text style={styles.snapshotEyebrow}>Pugliese weather</Text>
+        <Text style={styles.snapshotEyebrow}>Weather</Text>
         <Text style={styles.snapshotValue}>{weather.data ? `${Math.round(weather.data.current.temperature_2m)}°F` : '--°'}</Text>
         <Text style={styles.snapshotDetail}>{weather.isError ? 'Weather temporarily unavailable' : condition}</Text>
       </View>

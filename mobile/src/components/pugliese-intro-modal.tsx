@@ -28,13 +28,12 @@ export function PugalieseIntroModal({ visible, onDismiss }: { visible: boolean; 
               <View style={styles.rule} />
 
               <Text style={styles.body}>
-                This campus is named for Anthony Pugliese, who joined the Department of Design in 1931 and taught
-                etching, art history, and interior design.
+                Anthony Pugliese was an assistant professor and an artist who began teaching when the school was built in
+                the 1930s.
               </Text>
               <Text style={styles.body}>
-                President William Boylan — the namesake of Boylan Hall — chose Pugliese to help oversee construction of
-                the Midwood campus. His drawings captured the Georgian halls and the east and west quads students still
-                walk today.
+                President Boylan put Mr. Pugliese in charge of design, sketches, and overseeing the construction of the
+                campus buildings. Simply put — a true artist who helped build Brooklyn College.
               </Text>
 
               <Text style={styles.credit}>

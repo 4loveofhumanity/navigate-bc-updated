@@ -116,7 +116,7 @@ export default function CampusCommunityScreen() {
           <PairMethod
             icon="access-point"
             title="Find nearby"
-            detail="Pairs within ~42 cm (420 mm)"
+            detail="See who's nearby"
             onPress={() => startPairing('nearby')}
           />
         </View>
@@ -166,13 +166,6 @@ export default function CampusCommunityScreen() {
         ))}
       </Surface>
 
-      <View style={styles.note}>
-        <Ionicons color={colors.amber} name="information-circle-outline" size={18} />
-        <Text style={styles.noteText}>
-          Pairing uses NFC tap and Bluetooth / UWB proximity — two phones pair within ~420 mm (UWB measures this precisely; BLE
-          estimates it). These need a native build, so this demo simulates the handshake and keeps chats on your device.
-        </Text>
-      </View>
     </AppScaffold>
   );
 }
@@ -235,7 +228,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   addedText: { color: colors.green, fontFamily: fonts.uiMedium, fontSize: 13 },
-  shareRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: spacing.lg },
+  shareRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', marginTop: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.lg },
   shareText: { color: colors.maroon, fontFamily: fonts.uiMedium, fontSize: 13 },
   memberRow: {
     alignItems: 'center',
@@ -260,15 +253,4 @@ const styles = StyleSheet.create({
   durationLabel: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 10, marginTop: 1 },
   rowChat: { marginLeft: spacing.sm },
   totalTime: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 12 },
-  note: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.amberSoft,
-    borderRadius: radii.md,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.xl,
-    padding: spacing.md,
-  },
-  noteText: { color: colors.amber, flex: 1, fontFamily: fonts.uiMedium, fontSize: 12, lineHeight: 17 },
 });
