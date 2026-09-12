@@ -29,6 +29,7 @@ const SEED_FRIENDS: Friend[] = [
   { id: 'f-prova', name: 'Prova', code: 'BC-3387', accent: '#2F8F6B', addedVia: 'seed', minutesTogether: 400, location: 'Student Center' },
   { id: 'f-hana', name: 'Hana', code: 'BC-4471', accent: '#B5761F', addedVia: 'seed', minutesTogether: 195, location: 'West Quad Building' },
   { id: 'f-juthi', name: 'Juthi', code: 'BC-5590', accent: '#6C4BB6', addedVia: 'seed', minutesTogether: 115, location: 'Campus Library' },
+  { id: 'f-mahi', name: 'Mahi', code: 'BC-6601', accent: '#165D83', addedVia: 'seed', minutesTogether: 320, location: 'Student Center' },
 ];
 
 const DEMO_REPLIES = ['got it 👍', 'sounds good', 'see you there', 'haha okay', 'thanks!', 'on my way', 'yeah for sure'];

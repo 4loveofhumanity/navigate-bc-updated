@@ -82,7 +82,7 @@ export const DEMO_LOCATION: CampusLocation = {
 };
 
 export const DEMO_LIBRARY: LibraryInfo = {
-  name: 'Pugliese College Library',
+  name: 'Pugliese Library',
   location: 'Library Cafe Level',
   website: 'https://library.pugliese.cuny.edu/',
   libraryId: '29085012345678',
@@ -126,10 +126,10 @@ export const DEMO_LIBRARY: LibraryInfo = {
 };
 
 export const DEMO_STUDENT_CARD: StudentCard = {
-  college: 'PUGLIESE COLLEGE',
-  name: 'DEMO, STUDENT',
+  college: 'Brooklyn College',
+  name: 'Nahid, C',
   role: 'Undergraduate',
-  emplid: '1234XXXX',
+  emplid: '1234567',
   hotline: 'Mental-health support: call or text 988 for free, confidential support 24/7.',
   security: {
     lamp: 'blue',

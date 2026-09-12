@@ -48,18 +48,18 @@ export default function OnboardingScreen() {
 
         <View style={styles.content}>
           <View style={styles.brandWrap}>
-            <Text style={styles.brandTop}>Pugliese</Text>
+            <Text style={styles.brandTop}>Brooklyn</Text>
             <Text style={styles.brandBottom}>College</Text>
           </View>
 
           <Text style={styles.instructions}>
-            Use your Pugliese College WebCentral ID to gain access to your personal information.
+            Use your Brooklyn College WebCentral ID to gain access to your personal information.
           </Text>
           <Text style={styles.link}>Forgot your Password?</Text>
           <Text style={styles.helpText}>
             Don&apos;t have a WebCentral account?{'\n'}
             Call ITS Portal support at <Text style={styles.linkInline}>718-951-4357</Text> (HELP),{'\n'}
-            or visit <Text style={styles.linkInline}>https://portal.pugliese.edu</Text>.
+            or visit <Text style={styles.linkInline}>https://portal.brooklyn.edu</Text>.
           </Text>
 
           <View style={styles.formBox}>
@@ -118,9 +118,6 @@ export default function OnboardingScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.supportBubble}>
-            <Ionicons color={colors.white} name="link" size={55} />
-          </View>
         </View>
 
         <View style={styles.actions}>
@@ -220,17 +217,6 @@ const styles = StyleSheet.create({
   options: { gap: spacing.lg, marginLeft: 34, marginTop: spacing.xl },
   optionRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xl },
   optionText: { color: colors.black, fontFamily: fonts.uiBold, fontSize: 20 },
-  supportBubble: {
-    alignItems: 'center',
-    backgroundColor: '#58A0FA',
-    borderRadius: 56,
-    bottom: 254,
-    height: 112,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: spacing.sm,
-    width: 112,
-  },
   actions: { flexDirection: 'row', gap: spacing.md, paddingBottom: spacing.sm, paddingHorizontal: 28 },
   actionButton: {
     alignItems: 'center',
