@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Animated, Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { PageIntro, Pill } from '@/components/ui';
+import { Pill } from '@/components/ui';
 import { colors, fonts, radii, shadows, spacing } from '@/constants/theme';
 import { DEMO_LIBRARY, DEMO_STUDENT_CARD } from '@/data/demo';
 import { getLibraryResources, getStudentCard } from '@/lib/api';
@@ -29,16 +30,22 @@ export default function StudentIdScreen() {
     return () => animation.stop();
   }, [pulse]);
 
+  const router = useRouter();
   const data = card.data ?? DEMO_STUDENT_CARD;
   const libraryData = library.data ?? DEMO_LIBRARY;
 
   return (
-    <AppScaffold scroll={false}>
-      <PageIntro
-        eyebrow="Student ID"
-        title="Your mobile Student ID."
-        body="A clearly marked demo credential — not valid for campus access or identity verification."
-      />
+    <View style={styles.screen}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safe}>
+        <View style={styles.topRow}>
+          <Pressable accessibilityLabel="Close" accessibilityRole="button" hitSlop={10} onPress={() => router.back()} style={styles.closeButton}>
+            <Ionicons color={colors.ink} name="chevron-back" size={26} />
+          </Pressable>
+          <Text style={styles.topTitle}>Student ID</Text>
+          <View style={styles.closeButton} />
+        </View>
+
+        <View style={styles.cardArea}>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -93,8 +100,12 @@ export default function StudentIdScreen() {
           <SimpleBarcode value={libraryData.libraryId} />
           <Text selectable style={styles.libraryId}>{libraryData.libraryId}</Text>
         </View>
-      </View>
-    </AppScaffold>
+        </View>
+
+        <Text style={styles.disclaimer}>Demo credential — not valid for campus access or identity verification.</Text>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -111,6 +122,13 @@ function SimpleBarcode({ value }: { value: string }) {
 }
 
 const styles = StyleSheet.create({
+  screen: { backgroundColor: colors.cream, flex: 1 },
+  safe: { flex: 1 },
+  topRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  closeButton: { alignItems: 'center', height: 40, justifyContent: 'center', width: 40 },
+  topTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 17 },
+  cardArea: { flex: 1, justifyContent: 'center' },
+  disclaimer: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: spacing.xl, paddingHorizontal: spacing.xxl, textAlign: 'center' },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.maroon,

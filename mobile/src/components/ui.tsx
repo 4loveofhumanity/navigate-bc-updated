@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { color: colors.ink, flex: 1, fontFamily: fonts.ui, fontSize: 16, paddingVertical: spacing.sm },
   segmented: {
-    backgroundColor: '#EDE7DF',
+    backgroundColor: colors.border,
     borderRadius: radii.md,
     flexDirection: 'row',
     marginHorizontal: spacing.lg,

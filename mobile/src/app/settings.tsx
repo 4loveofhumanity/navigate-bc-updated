@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppScaffold } from '@/components/app-scaffold';
 import { ActionButton, PageIntro, SectionTitle, SegmentedControl, Surface } from '@/components/ui';
-import { colors, fonts, spacing } from '@/constants/theme';
+import { colors, fonts, getThemePreference, setThemePreference, spacing, type ThemePreference } from '@/constants/theme';
 import { useSettings } from '@/context/settings-context';
 import type { UserPreferences } from '@/types/domain';
 
@@ -91,6 +91,17 @@ export default function SettingsScreen() {
           { label: 'Employee', value: 'employee' },
         ]}
         value={preferences.userType}
+      />
+
+      <SectionTitle>Appearance</SectionTitle>
+      <SegmentedControl
+        onChange={(value: ThemePreference) => setThemePreference(value)}
+        options={[
+          { label: 'System', value: 'system' },
+          { label: 'Light', value: 'light' },
+          { label: 'Dark', value: 'dark' },
+        ]}
+        value={getThemePreference()}
       />
 
       <SectionTitle>Privacy and access</SectionTitle>

@@ -1,6 +1,34 @@
 import { Platform } from 'react-native';
 
-export const colors = {
+export type ColorScheme = 'light' | 'dark';
+export type ThemePreference = 'light' | 'dark' | 'system';
+
+type Palette = {
+  maroon: string;
+  maroonDark: string;
+  maroonDeep: string;
+  maroonSoft: string;
+  cream: string;
+  paper: string;
+  surface: string;
+  ink: string;
+  inkMuted: string;
+  border: string;
+  borderStrong: string;
+  blue: string;
+  blueSoft: string;
+  green: string;
+  greenSoft: string;
+  amber: string;
+  amberSoft: string;
+  red: string;
+  redSoft: string;
+  white: string;
+  black: string;
+  shadow: string;
+};
+
+const LIGHT: Palette = {
   maroon: '#862633',
   maroonDark: '#651C28',
   maroonDeep: '#46131B',
@@ -23,7 +51,81 @@ export const colors = {
   white: '#FFFFFF',
   black: '#000000',
   shadow: '#37151B',
-} as const;
+};
+
+const DARK: Palette = {
+  maroon: '#B0485A',
+  maroonDark: '#933B4B',
+  maroonDeep: '#6E2C3A',
+  maroonSoft: '#3A2028',
+  cream: '#141210',
+  paper: '#1C1915',
+  surface: '#24201A',
+  ink: '#F3EFE8',
+  inkMuted: '#A69E93',
+  border: '#352E26',
+  borderStrong: '#4C4238',
+  blue: '#5EA6D6',
+  blueSoft: '#16303D',
+  green: '#57B98E',
+  greenSoft: '#16302A',
+  amber: '#D79B4C',
+  amberSoft: '#33291A',
+  red: '#E6796F',
+  redSoft: '#341D1D',
+  white: '#FFFFFF',
+  black: '#000000',
+  shadow: '#000000',
+};
+
+const THEME_KEY = 'pugliese-navigate.theme';
+const g = globalThis as unknown as {
+  localStorage?: { getItem(k: string): string | null; setItem(k: string, v: string): void };
+  matchMedia?: (q: string) => { matches: boolean };
+  location?: { reload(): void };
+};
+
+function systemScheme(): ColorScheme {
+  try {
+    if (g.matchMedia) return g.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    // ignore
+  }
+  return 'light';
+}
+
+function storedPreference(): ThemePreference {
+  try {
+    const value = g.localStorage?.getItem(THEME_KEY);
+    if (value === 'light' || value === 'dark' || value === 'system') return value;
+  } catch {
+    // ignore
+  }
+  return 'system';
+}
+
+// Resolve the active scheme once at load. Screens build their styles from
+// `colors` at import time, so switching persists the choice and reloads.
+const preference = storedPreference();
+export const activeScheme: ColorScheme = preference === 'system' ? systemScheme() : preference;
+export const colors: Palette = activeScheme === 'dark' ? DARK : LIGHT;
+
+export function getThemePreference(): ThemePreference {
+  return storedPreference();
+}
+
+export function setThemePreference(preference: ThemePreference): void {
+  try {
+    g.localStorage?.setItem(THEME_KEY, preference);
+  } catch {
+    // ignore
+  }
+  try {
+    if (Platform.OS === 'web') g.location?.reload();
+  } catch {
+    // ignore
+  }
+}
 
 export const fonts = {
   ui: 'SourceSans3_400Regular',
@@ -59,24 +161,14 @@ export const radii = {
 
 export const shadows = {
   card: Platform.select({
-    ios: {
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.09,
-      shadowRadius: 18,
-    },
+    ios: { shadowColor: colors.shadow, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.09, shadowRadius: 18 },
     android: { elevation: 3 },
-    default: { boxShadow: '0 8px 24px rgba(55, 21, 27, 0.09)' },
+    default: { boxShadow: `0 8px 24px ${activeScheme === 'dark' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(55, 21, 27, 0.09)'}` },
   }),
   floating: Platform.select({
-    ios: {
-      shadowColor: colors.black,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.18,
-      shadowRadius: 18,
-    },
+    ios: { shadowColor: colors.black, shadowOffset: { width: 0, height: 8 }, shadowOpacity: activeScheme === 'dark' ? 0.4 : 0.18, shadowRadius: 18 },
     android: { elevation: 8 },
-    default: { boxShadow: '0 10px 30px rgba(0, 0, 0, 0.16)' },
+    default: { boxShadow: `0 10px 30px ${activeScheme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.16)'}` },
   }),
 } as const;
 

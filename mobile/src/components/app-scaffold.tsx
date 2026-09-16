@@ -18,6 +18,9 @@ type AppScaffoldProps = PropsWithChildren<{
   beforeRail?: ReactNode;
 }>;
 
+// Height reserved at the bottom so content clears the floating nav bar.
+const RAIL_CLEARANCE = 104;
+
 export function AppScaffold({ children, scroll = true, contentContainerStyle, beforeRail }: AppScaffoldProps) {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -29,12 +32,15 @@ export function AppScaffold({ children, scroll = true, contentContainerStyle, be
           showsVerticalScrollIndicator={false}
         >
           {children}
+          <View style={styles.railClearance} />
         </ScrollView>
       ) : (
         <View style={[styles.content, styles.flexContent, contentContainerStyle]}>{children}</View>
       )}
-      {beforeRail}
-      <BottomActionRail />
+      <View pointerEvents="box-none" style={styles.dock}>
+        {beforeRail}
+        <BottomActionRail />
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -47,5 +53,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: layout.contentMaxWidth,
   },
-  flexContent: { flex: 1 },
+  flexContent: { flex: 1, paddingBottom: RAIL_CLEARANCE },
+  railClearance: { height: RAIL_CLEARANCE },
+  dock: { bottom: 0, left: 0, position: 'absolute', right: 0 },
 });

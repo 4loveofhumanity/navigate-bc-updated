@@ -3,13 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, Redirect, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, ImageBackground, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppScaffold } from '@/components/app-scaffold';
 import { FeatureCard } from '@/components/feature-card';
-import { PugalieseIntroModal } from '@/components/pugliese-intro-modal';
-import { colors, fonts, radii, shadows, spacing } from '@/constants/theme';
+import { activeScheme, colors, fonts, radii, setThemePreference, shadows, spacing } from '@/constants/theme';
 import { useSettings } from '@/context/settings-context';
 import { CAMPUS_ALERTS, CAMPUS_EVENTS } from '@/data/demo';
 
@@ -83,7 +82,7 @@ const COLLAPSED_TOOL_COUNT = 6;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hydrated, preferences, updatePreference } = useSettings();
+  const { hydrated, preferences } = useSettings();
   const [showAllTools, setShowAllTools] = useState(false);
   const alertCount = useAlertCount();
 
@@ -95,7 +94,6 @@ export default function HomeScreen() {
   const hasAlerts = alertCount > 0;
 
   return (
-    <>
     <AppScaffold contentContainerStyle={styles.content}>
       <ImageBackground
         accessibilityLabel="Pugliese College Lily Pond in bloom"
@@ -115,15 +113,29 @@ export default function HomeScreen() {
               <Image source={require('../../assets/brand/seal.png')} style={styles.topbarSeal} />
               <Text style={styles.appName}>N° Navigate</Text>
             </View>
-            <Pressable
-              accessibilityLabel={hasAlerts ? 'Open alerts, unread notices available' : 'Open alerts'}
-              accessibilityRole="button"
-              onPress={() => router.push('/alerts')}
-              style={styles.topAction}
-            >
-              <Ionicons color={colors.white} name="notifications-outline" size={22} />
-              {hasAlerts && <View style={styles.notificationBadge} />}
-            </Pressable>
+            <View style={styles.topActions}>
+              <View style={styles.themeSwitch}>
+                <Ionicons color={colors.white} name="moon" size={15} />
+                <Switch
+                  accessibilityLabel={activeScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  ios_backgroundColor="rgba(255,255,255,0.28)"
+                  onValueChange={(on) => setThemePreference(on ? 'dark' : 'light')}
+                  style={styles.themeSwitchControl}
+                  thumbColor={colors.white}
+                  trackColor={{ false: 'rgba(255,255,255,0.28)', true: colors.maroon }}
+                  value={activeScheme === 'dark'}
+                />
+              </View>
+              <Pressable
+                accessibilityLabel={hasAlerts ? 'Open alerts, unread notices available' : 'Open alerts'}
+                accessibilityRole="button"
+                onPress={() => router.push('/alerts')}
+                style={styles.topAction}
+              >
+                <Ionicons color={colors.white} name="notifications-outline" size={22} />
+                {hasAlerts && <View style={styles.notificationBadge} />}
+              </Pressable>
+            </View>
           </View>
 
           <AlertToast hasAlerts={hasAlerts} onPress={() => router.push('/alerts')} />
@@ -132,16 +144,12 @@ export default function HomeScreen() {
 
           <View style={styles.heroCopy}>
             <Text style={styles.collegeName}>BROOKLYN COLLEGE</Text>
+            <Text style={styles.heroMotto}>NIL SINE MAGNO LABORE</Text>
+            <Text style={styles.heroMottoSub}>Nothing without great effort</Text>
             <Text style={styles.campusAddress}>2900 Bedford Avenue, Brooklyn, NY 11210</Text>
           </View>
         </SafeAreaView>
       </ImageBackground>
-
-      <View style={styles.indexIntro}>
-        <Text style={styles.indexEyebrow}>Brooklyn College</Text>
-        <Text style={styles.indexTitle}>NIL SINE MAGNO LABORE</Text>
-        <Text style={styles.indexTranslation}>Nothing without great effort</Text>
-      </View>
 
       <View style={styles.quickAccess}>
         <Text style={styles.quickAccessLabel}>Quick access</Text>
@@ -188,11 +196,6 @@ export default function HomeScreen() {
         <Text style={styles.footerText}>Demo data is clearly labeled until official authenticated services are connected.</Text>
       </View>
     </AppScaffold>
-    <PugalieseIntroModal
-      visible={!preferences.puglieseIntroSeen}
-      onDismiss={() => updatePreference('puglieseIntroSeen', true)}
-    />
-    </>
   );
 }
 
@@ -246,6 +249,9 @@ function QuickAccessCard({
 const styles = StyleSheet.create({
   loading: { alignItems: 'center', backgroundColor: colors.cream, flex: 1, justifyContent: 'center' },
   content: { paddingBottom: spacing.lg },
+  topActions: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  themeSwitch: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  themeSwitchControl: { transform: [{ scale: 0.85 }] },
   hero: { minHeight: 300, overflow: 'hidden' },
   heroImage: { borderBottomLeftRadius: radii.xl, borderBottomRightRadius: radii.xl },
   heroSafeArea: { flex: 1, justifyContent: 'space-between' },
@@ -324,10 +330,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     textAlign: 'center',
   },
-  indexIntro: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm },
-  indexEyebrow: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 10, letterSpacing: 2, marginBottom: spacing.xs, textTransform: 'uppercase' },
-  indexTitle: { color: colors.ink, fontFamily: fonts.typewriter, fontSize: 17, letterSpacing: 1.2, lineHeight: 24, textAlign: 'center' },
-  indexTranslation: { color: colors.maroon, fontFamily: fonts.uiMedium, fontSize: 11, letterSpacing: 0.5, lineHeight: 16, marginTop: 1, textAlign: 'center' },
+  heroMotto: { color: colors.white, fontFamily: fonts.typewriter, fontSize: 15, letterSpacing: 1.4, lineHeight: 22, marginTop: spacing.md, textAlign: 'center' },
+  heroMottoSub: { color: 'rgba(255,255,255,.82)', fontFamily: fonts.uiMedium, fontSize: 11, letterSpacing: 0.5, lineHeight: 15, marginTop: 1, textAlign: 'center' },
   quickAccess: { marginTop: spacing.sm },
   snapshotRow: { alignSelf: 'flex-start', marginLeft: spacing.lg, marginTop: spacing.sm },
   snapshotCard: { width: 132 },
