@@ -67,6 +67,7 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="dashboard" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="directory" options={{ title: 'Directory' }} />
               <Stack.Screen name="courses" options={{ title: 'Course Catalog' }} />

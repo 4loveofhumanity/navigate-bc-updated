@@ -1,357 +1,181 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { type Href, Redirect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Image, ImageBackground, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Animated, Image, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { AppScaffold } from '@/components/app-scaffold';
-import { FeatureCard } from '@/components/feature-card';
-import { activeScheme, colors, fonts, radii, setThemePreference, shadows, spacing } from '@/constants/theme';
+import { Pill } from '@/components/ui';
+import { colors, fonts, radii, shadows, spacing } from '@/constants/theme';
 import { useSettings } from '@/context/settings-context';
-import { CAMPUS_ALERTS, CAMPUS_EVENTS } from '@/data/demo';
+import { DEMO_LIBRARY, DEMO_STUDENT_CARD } from '@/data/demo';
+import { getLibraryResources, getStudentCard } from '@/lib/api';
 
-function useAlertCount() {
-  return useMemo(() => {
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const todaysEvents = CAMPUS_EVENTS.filter((event) => event.date === todayIso).length;
-    return CAMPUS_ALERTS.length + todaysEvents;
-  }, []);
-}
+// Passport-cropped student photo shown in the ID frame.
+const STUDENT_PHOTO: number | null = require('../../assets/brand/student-photo.jpg');
 
-function AlertToast({ hasAlerts, onPress }: { hasAlerts: boolean; onPress: () => void }) {
-  const [mounted, setMounted] = useState(hasAlerts);
-  const [anim] = useState(() => new Animated.Value(0));
+// The Student ID is the app's home route.
+export default function HomeScreen() {
+  const { hydrated, preferences } = useSettings();
+  const card = useQuery({ queryKey: ['student-card'], queryFn: getStudentCard, placeholderData: DEMO_STUDENT_CARD });
+  const library = useQuery({ queryKey: ['library-resources'], queryFn: getLibraryResources, placeholderData: DEMO_LIBRARY });
+  const [pulse] = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
-    if (!hasAlerts) return;
-    Animated.spring(anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 60 }).start();
-    const timer = setTimeout(() => {
-      Animated.timing(anim, { toValue: 0, duration: 380, useNativeDriver: true }).start(({ finished }) => {
-        if (finished) setMounted(false);
-      });
-    }, 3600);
-    return () => clearTimeout(timer);
-  }, [hasAlerts, anim]);
-
-  if (!mounted || !hasAlerts) return null;
-
-  return (
-    <Animated.View
-      style={[
-        styles.toast,
-        { opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-14, 0] }) }] },
-      ]}
-    >
-      <Pressable accessibilityLabel="New alerts, open alerts" accessibilityRole="button" onPress={onPress} style={styles.toastInner}>
-        <Ionicons color={colors.white} name="notifications" size={16} />
-        <Text style={styles.toastText}>New alerts</Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-type Feature = {
-  title: string;
-  subtitle: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  href: Href;
-  tone?: 'maroon' | 'blue';
-  badge?: string;
-};
-
-const features: Feature[] = [
-  { title: 'My Classes', subtitle: 'Assignments, class chat, and files', icon: 'google-classroom', href: '/my-classes', badge: '3 active' },
-  { title: 'Academic Calendar', subtitle: 'Registrar dates and deadlines', icon: 'calendar-star', href: '/academic-calendar' },
-  { title: 'Events', subtitle: 'What is happening on campus', icon: 'calendar-month-outline', href: '/events' },
-  { title: 'Dining & Orders', subtitle: 'Order online from the cafeteria', icon: 'silverware-fork-knife', href: '/cafeteria' },
-  { title: 'Messages', subtitle: 'Text your classmates', icon: 'message-text-outline', href: '/messages' },
-  { title: 'My Career', subtitle: 'Career-readiness guide', icon: 'briefcase-variant-outline', href: '/career', tone: 'blue' },
-  { title: 'Courses', subtitle: 'Catalog and sections', icon: 'book-open-page-variant-outline', href: '/courses' },
-  { title: 'Campus Map', subtitle: 'Buildings and directions', icon: 'map-marker-radius-outline', href: '/map', tone: 'blue' },
-  { title: 'Directory', subtitle: 'Offices and employees', icon: 'account-group-outline', href: '/directory', tone: 'blue' },
-  { title: 'Student Info', subtitle: 'Student profile and holds', icon: 'account-school-outline', href: '/info' },
-  { title: 'Library', subtitle: 'Research, books, and study support', icon: 'bookshelf', href: '/library' },
-  { title: 'Help', subtitle: 'Answers and contacts', icon: 'help-circle-outline', href: '/help' },
-  { title: 'Campus', subtitle: 'Campus community', icon: 'account-group-outline', href: '/pugliese-circle', tone: 'blue' },
-  { title: 'Fix-it', subtitle: 'Report a campus issue', icon: 'wrench-outline', href: '/fix-it' },
-];
-
-const COLLAPSED_TOOL_COUNT = 6;
-
-export default function HomeScreen() {
-  const router = useRouter();
-  const { hydrated, preferences } = useSettings();
-  const [showAllTools, setShowAllTools] = useState(false);
-  const alertCount = useAlertCount();
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { duration: 1400, toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulse, { duration: 1400, toValue: 0.5, useNativeDriver: Platform.OS !== 'web' }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulse]);
 
   if (!hydrated) return <View style={styles.loading}><ActivityIndicator color={colors.maroon} /></View>;
   if (!preferences.loginComplete) return <Redirect href="/onboarding" />;
 
-  const visibleFeatures = showAllTools ? features : features.slice(0, COLLAPSED_TOOL_COUNT);
-  const hiddenCount = features.length - COLLAPSED_TOOL_COUNT;
-  const hasAlerts = alertCount > 0;
+  const data = card.data ?? DEMO_STUDENT_CARD;
+  const libraryData = library.data ?? DEMO_LIBRARY;
 
   return (
-    <AppScaffold contentContainerStyle={styles.content}>
-      <ImageBackground
-        accessibilityLabel="Pugliese College Lily Pond in bloom"
-        imageStyle={styles.heroImage}
-        resizeMode="cover"
-        source={require('../../assets/brand/lily-pond.jpg')}
-        style={styles.hero}
-      >
-        <LinearGradient
-          colors={['rgba(38, 10, 15, 0.22)', 'rgba(45, 11, 17, 0.12)', 'rgba(54, 13, 21, 0.84)']}
-          locations={[0, 0.46, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView edges={['top']} style={styles.heroSafeArea}>
-          <View style={styles.topbar}>
-            <View style={styles.appIdentity}>
-              <Image source={require('../../assets/brand/seal.png')} style={styles.topbarSeal} />
-              <Text style={styles.appName}>N° Navigate</Text>
-            </View>
-            <View style={styles.topActions}>
-              <View style={styles.themeSwitch}>
-                <Ionicons color={colors.white} name="moon" size={15} />
-                <Switch
-                  accessibilityLabel={activeScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                  ios_backgroundColor="rgba(255,255,255,0.28)"
-                  onValueChange={(on) => setThemePreference(on ? 'dark' : 'light')}
-                  style={styles.themeSwitchControl}
-                  thumbColor={colors.white}
-                  trackColor={{ false: 'rgba(255,255,255,0.28)', true: colors.maroon }}
-                  value={activeScheme === 'dark'}
-                />
+    <AppScaffold scroll={false} contentContainerStyle={styles.cardArea}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.sealBadge}>
+            <Image source={require('../../assets/brand/seal.png')} style={styles.seal} />
+          </View>
+          <View style={styles.brandCopy}>
+            <Text style={styles.college}>{data.college}</Text>
+            <Text style={styles.cuny}>THE CITY UNIVERSITY OF NEW YORK</Text>
+          </View>
+          <Pill tone="warning">DEMO</Pill>
+        </View>
+
+        <View style={styles.idBody}>
+          <View style={styles.photoFrame}>
+            {STUDENT_PHOTO ? (
+              <Image resizeMode="cover" source={STUDENT_PHOTO} style={styles.photo} />
+            ) : (
+              <Ionicons color={colors.maroon} name="person" size={52} />
+            )}
+          </View>
+          <View style={styles.idDetails}>
+            <Text style={styles.studentName}>{data.name}</Text>
+            <Text style={styles.studentRole}>{data.role}</Text>
+
+            <Text style={styles.fieldLabel}>EMPLID</Text>
+            <Text style={styles.fieldValue}>{data.emplid}</Text>
+
+            <View style={styles.liveRow}>
+              <Animated.View style={[styles.liveDot, { opacity: pulse, transform: [{ scale: pulse }] }]}>
+                <LinearGradient colors={['#8FD0FF', '#1565D8']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} style={styles.liveDotFill} />
+              </Animated.View>
+              <View>
+                <Text style={styles.liveLabel}>LIVE SCREEN</Text>
+                <Text style={styles.liveSub}>Demo verification signal</Text>
               </View>
-              <Pressable
-                accessibilityLabel={hasAlerts ? 'Open alerts, unread notices available' : 'Open alerts'}
-                accessibilityRole="button"
-                onPress={() => router.push('/alerts')}
-                style={styles.topAction}
-              >
-                <Ionicons color={colors.white} name="notifications-outline" size={22} />
-                {hasAlerts && <View style={styles.notificationBadge} />}
-              </Pressable>
             </View>
           </View>
+        </View>
 
-          <AlertToast hasAlerts={hasAlerts} onPress={() => router.push('/alerts')} />
+        <View style={styles.invalidBand}>
+          <Ionicons color={colors.white} name="lock-closed" size={14} />
+          <Text style={styles.invalidText}>NOT VALID FOR ENTRY OR IDENTIFICATION</Text>
+        </View>
 
-          <DashboardSnapshot />
-
-          <View style={styles.heroCopy}>
-            <Text style={styles.collegeName}>BROOKLYN COLLEGE</Text>
-            <Text style={styles.heroMotto}>NIL SINE MAGNO LABORE</Text>
-            <Text style={styles.heroMottoSub}>Nothing without great effort</Text>
-            <Text style={styles.campusAddress}>2900 Bedford Avenue, Brooklyn, NY 11210</Text>
+        <View style={styles.librarySection}>
+          <View style={styles.libraryHeader}>
+            <View style={styles.libraryHeaderCopy}>
+              <Text style={styles.libraryLabel}>LIBRARY CARD</Text>
+              <Text style={styles.libraryName}>{libraryData.name}</Text>
+            </View>
+            <Ionicons color={colors.maroon} name="library-outline" size={20} />
           </View>
-        </SafeAreaView>
-      </ImageBackground>
-
-      <View style={styles.quickAccess}>
-        <Text style={styles.quickAccessLabel}>Quick access</Text>
-        <View style={styles.quickAccessGrid}>
-          <QuickAccessCard
-            icon="account-group-outline"
-            onPress={() => router.push('/pugliese-circle')}
-            subtitle="Campus community"
-            title="Campus"
-          />
-          {/* Student ID intentionally remains the fixed top-right Quick Access action. */}
-          <QuickAccessCard
-            icon="card-account-details-outline"
-            onPress={() => router.push('/student-id')}
-            subtitle="Demo student credential"
-            title="Student ID"
-          />
+          <SimpleBarcode value={libraryData.libraryId} />
+          <Text selectable style={styles.libraryId}>{libraryData.libraryId}</Text>
         </View>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Campus tools</Text>
-        <Text style={styles.sectionMeta}>{showAllTools ? 'All services' : 'Featured services'}</Text>
-      </View>
-
-      <View style={styles.featureGrid}>
-        {visibleFeatures.map((feature) => <FeatureCard key={feature.title} {...feature} />)}
-      </View>
-
-      {hiddenCount > 0 && (
-        <Pressable
-          accessibilityLabel={showAllTools ? 'Show fewer campus tools' : `Show ${hiddenCount} more campus tools`}
-          accessibilityRole="button"
-          hitSlop={10}
-          onPress={() => setShowAllTools((prev) => !prev)}
-          style={({ pressed }) => [styles.showMore, pressed && styles.showMorePressed]}
-        >
-          <Ionicons color={colors.maroon} name={showAllTools ? 'chevron-up' : 'chevron-down'} size={26} />
-        </Pressable>
-      )}
-
-      <View style={styles.footerNote}>
-        <Ionicons color={colors.green} name="shield-checkmark" size={17} />
-        <Text style={styles.footerText}>Demo data is clearly labeled until official authenticated services are connected.</Text>
-      </View>
+      <Text style={styles.disclaimer}>Demo credential — not valid for campus access or identity verification.</Text>
     </AppScaffold>
   );
 }
 
-function DashboardSnapshot() {
-  const weather = useQuery({
-    queryKey: ['pugliese-weather'],
-    queryFn: async () => {
-      const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=40.65&longitude=-73.95&current=temperature_2m,apparent_temperature,weather_code&temperature_unit=fahrenheit');
-      if (!response.ok) throw new Error('Weather unavailable');
-      return response.json() as Promise<{ current: { temperature_2m: number; apparent_temperature: number; weather_code: number } }>;
-    },
-    staleTime: 15 * 60_000,
-  });
-  const code = weather.data?.current.weather_code;
-  const condition = code === undefined ? 'Loading current conditions' : code === 0 ? 'Clear' : code <= 3 ? 'Partly cloudy' : code <= 67 ? 'Rain' : code <= 77 ? 'Snow' : 'Showers';
+function SimpleBarcode({ value }: { value: string }) {
+  const bars = `101${value.split('').map((digit) => (Number(digit) || 0).toString(2).padStart(4, '0')).join('01')}101`;
 
   return (
-    <View style={styles.snapshotRow}>
-      <View style={styles.snapshotCard}>
-        <Text style={styles.snapshotEyebrow}>Weather</Text>
-        <Text style={styles.snapshotValue}>{weather.data ? `${Math.round(weather.data.current.temperature_2m)}°F` : '--°'}</Text>
-        <Text style={styles.snapshotDetail}>{weather.isError ? 'Weather temporarily unavailable' : condition}</Text>
-      </View>
+    <View accessibilityLabel={`Library card barcode ${value}`} style={styles.barcode}>
+      {bars.split('').map((bar, index) => (
+        <View key={`${index}-${bar}`} style={[styles.barcodeBar, bar === '0' && styles.barcodeSpace]} />
+      ))}
     </View>
-  );
-}
-
-function QuickAccessCard({
-  icon,
-  onPress,
-  subtitle,
-  title,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  onPress: () => void;
-  subtitle: string;
-  title: string;
-}) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.quickCard, pressed && styles.quickCardPressed]}>
-      <View style={styles.quickIcon}><MaterialCommunityIcons color={colors.maroon} name={icon} size={21} /></View>
-      <View style={styles.quickCopy}>
-        <Text numberOfLines={1} style={styles.quickTitle}>{title}</Text>
-        <Text numberOfLines={2} style={styles.quickSubtitle}>{subtitle}</Text>
-      </View>
-      <Ionicons color={colors.maroon} name="chevron-forward" size={17} />
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   loading: { alignItems: 'center', backgroundColor: colors.cream, flex: 1, justifyContent: 'center' },
-  content: { paddingBottom: spacing.lg },
-  topActions: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
-  themeSwitch: { alignItems: 'center', flexDirection: 'row', gap: 4 },
-  themeSwitchControl: { transform: [{ scale: 0.85 }] },
-  hero: { minHeight: 300, overflow: 'hidden' },
-  heroImage: { borderBottomLeftRadius: radii.xl, borderBottomRightRadius: radii.xl },
-  heroSafeArea: { flex: 1, justifyContent: 'space-between' },
-  topbar: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
-  },
-  appIdentity: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
-  topbarSeal: { backgroundColor: colors.white, borderRadius: 15, height: 34, width: 34 },
-  appName: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 16 },
-  topAction: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(32, 7, 12, 0.32)',
-    borderColor: 'rgba(255,255,255,.35)',
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 42,
-  },
-  toast: {
-    alignSelf: 'center',
-    position: 'absolute',
-    top: 52,
-    zIndex: 10,
+  cardArea: { justifyContent: 'center' },
+  disclaimer: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: spacing.xl, paddingHorizontal: spacing.xxl, textAlign: 'center' },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.maroon,
+    borderRadius: radii.lg,
+    borderWidth: 2,
+    marginHorizontal: spacing.lg,
+    overflow: 'hidden',
+    padding: spacing.lg,
     ...shadows.floating,
   },
-  toastInner: {
+  cardHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  sealBadge: { alignItems: 'center', backgroundColor: colors.white, borderRadius: 25, height: 50, justifyContent: 'center', width: 50 },
+  seal: { height: 44, width: 44 },
+  brandCopy: { flex: 1 },
+  college: { color: colors.maroon, fontFamily: fonts.display, fontSize: 22, letterSpacing: 0.5 },
+  cuny: { color: colors.inkMuted, fontFamily: fonts.uiBold, fontSize: 8, letterSpacing: 0.7 },
+  idBody: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.lg },
+  photoFrame: {
     alignItems: 'center',
-    backgroundColor: 'rgba(56, 189, 248, 0.82)',
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    borderRadius: radii.round,
+    backgroundColor: colors.maroonSoft,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
+    height: 118,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 92,
+  },
+  photo: { height: '100%', width: '100%' },
+  idDetails: { flex: 1, justifyContent: 'center' },
+  studentName: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 22 },
+  studentRole: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 14, marginTop: 2 },
+  fieldLabel: { color: colors.inkMuted, fontFamily: fonts.uiBold, fontSize: 9, letterSpacing: 1.2, marginTop: spacing.md },
+  fieldValue: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 17, letterSpacing: 1, marginTop: 2 },
+  liveRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  liveDot: { borderRadius: 14, elevation: 3, height: 28, overflow: 'hidden', shadowColor: '#1565D8', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 6, width: 28 },
+  liveDotFill: { flex: 1 },
+  liveLabel: { color: colors.blue, fontFamily: fonts.uiBold, fontSize: 9, letterSpacing: 1 },
+  liveSub: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 9 },
+  invalidBand: {
+    alignItems: 'center',
+    backgroundColor: colors.maroon,
+    borderRadius: radii.sm,
     flexDirection: 'row',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    padding: spacing.md,
   },
-  toastText: {
-    color: colors.white,
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
-    letterSpacing: 0.2,
-  },
-  notificationBadge: {
-    backgroundColor: '#FFD34E',
-    borderColor: colors.maroonDeep,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    height: 10,
-    position: 'absolute',
-    right: 2,
-    top: 2,
-    width: 10,
-  },
-  heroCopy: { alignItems: 'center', paddingBottom: 46, paddingHorizontal: spacing.xl },
-  heroSeal: { backgroundColor: 'rgba(255,255,255,.96)', borderRadius: 16, height: 64, marginBottom: spacing.sm, width: 64, ...shadows.floating },
-  collegeName: {
-    color: colors.white,
-    fontFamily: fonts.display,
-    fontSize: 31,
-    letterSpacing: 2.4,
-    lineHeight: 34,
-    textAlign: 'center',
-  },
-  campusAddress: {
-    color: 'rgba(255,255,255,.88)',
-    fontFamily: fonts.uiMedium,
-    fontSize: 12,
-    letterSpacing: 0.35,
-    lineHeight: 16,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  heroMotto: { color: colors.white, fontFamily: fonts.typewriter, fontSize: 15, letterSpacing: 1.4, lineHeight: 22, marginTop: spacing.md, textAlign: 'center' },
-  heroMottoSub: { color: 'rgba(255,255,255,.82)', fontFamily: fonts.uiMedium, fontSize: 11, letterSpacing: 0.5, lineHeight: 15, marginTop: 1, textAlign: 'center' },
-  quickAccess: { marginTop: spacing.sm },
-  snapshotRow: { alignSelf: 'flex-start', marginLeft: spacing.lg, marginTop: spacing.sm },
-  snapshotCard: { width: 132 },
-  snapshotEyebrow: { color: 'rgba(255,255,255,.78)', fontFamily: fonts.uiBold, fontSize: 9, letterSpacing: 0.4, textTransform: 'uppercase' },
-  snapshotValue: { color: colors.white, fontFamily: fonts.display, fontSize: 23, lineHeight: 25, marginTop: 1 },
-  snapshotDetail: { color: 'rgba(255,255,255,.82)', fontFamily: fonts.ui, fontSize: 10, lineHeight: 12, marginTop: 1 },
-  quickAccessLabel: { color: colors.inkMuted, fontFamily: fonts.uiBold, fontSize: 12, letterSpacing: 0.8, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, textTransform: 'uppercase' },
-  quickAccessGrid: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
-  quickCard: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, flex: 1, flexDirection: 'row', gap: spacing.sm, minHeight: 72, paddingHorizontal: spacing.sm, ...shadows.card },
-  quickCardPressed: { backgroundColor: colors.maroonSoft, opacity: 0.8 },
-  quickIcon: { alignItems: 'center', backgroundColor: colors.maroonSoft, borderRadius: radii.sm, height: 36, justifyContent: 'center', width: 36 },
-  quickCopy: { flex: 1 },
-  quickTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 13, lineHeight: 16 },
-  quickSubtitle: { color: colors.inkMuted, fontFamily: fonts.ui, fontSize: 10, lineHeight: 13, marginTop: 2 },
-  sectionHeader: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, paddingTop: spacing.lg },
-  sectionTitle: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 20 },
-  sectionMeta: { color: colors.inkMuted, fontFamily: fonts.uiMedium, fontSize: 12 },
-  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm, paddingHorizontal: spacing.lg },
-  showMore: { alignItems: 'center', alignSelf: 'center', borderRadius: radii.md, height: 34, justifyContent: 'center', marginTop: spacing.sm, width: 52 },
-  showMorePressed: { backgroundColor: colors.maroonSoft, opacity: 0.85 },
-  footerNote: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.xl },
-  footerText: { color: colors.inkMuted, flex: 1, fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
+  invalidText: { color: colors.white, fontFamily: fonts.uiBold, fontSize: 10, letterSpacing: 0.5 },
+  librarySection: { borderTopColor: colors.border, borderTopWidth: 1, marginTop: spacing.lg, paddingTop: spacing.lg },
+  libraryHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+  libraryHeaderCopy: { flex: 1 },
+  libraryLabel: { color: colors.maroon, fontFamily: fonts.uiBold, fontSize: 9, letterSpacing: 1.2 },
+  libraryName: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 14, marginTop: 2 },
+  barcode: { alignItems: 'stretch', flexDirection: 'row', height: 48, justifyContent: 'center', overflow: 'hidden', width: '100%' },
+  barcodeBar: { backgroundColor: colors.ink, flex: 1, maxWidth: 4 },
+  barcodeSpace: { backgroundColor: 'transparent' },
+  libraryId: { color: colors.ink, fontFamily: fonts.uiBold, fontSize: 14, letterSpacing: 2, marginTop: spacing.sm, textAlign: 'center' },
 });
